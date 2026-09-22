@@ -39,6 +39,18 @@ variable or secret-manager injection is preferable because command arguments
 can be visible to other processes. The token is stored in a Kubernetes Secret,
 not in Helm release values.
 
+To update the agent token run 
+
+```bash 
+  helm upgrade agent-stack-k8s \
+      oci://ghcr.io/buildkite/helm/agent-stack-k8s \
+      -n buildkite \
+      --reuse-values \
+      --set-string agentStackSecret= \
+      --set-string agentToken='bkct_TOKEN_FROM_CORRECT_CLUSTER' \
+      --set-string config.queue='QUEUE_FROM_CORRECT_CLUSTER'
+```
+
 The queue must already exist in the same Buildkite cluster as the token. Target
 it explicitly from a pipeline step:
 
