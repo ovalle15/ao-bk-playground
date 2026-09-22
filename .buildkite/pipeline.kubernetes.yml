@@ -7,12 +7,13 @@ env:
   # Set this if the Buildkite Packages registry requires authenticated pulls.
   REGISTRY_PULL_SECRET: ""
   APP_VERSION: "1.0"
+  QUEUE: "kube"
 
 steps:
   - label: ":helm: Validate chart"
     key: "validate-chart"
     agents:
-      queue: "kubernetes"
+      queue: "$$QUEUE"
     image: "alpine/helm:latest"
     command: |
       set -eu
@@ -22,11 +23,11 @@ steps:
         --set-string "secrets.existingSecret=$$NASA_API_SECRET" \
         > /dev/null
 
-  - label: ":kubernetes: Deploy published images"
+  - label: ":kube: Deploy published images"
     key: "deploy-published-images"
     depends_on: "validate-chart"
     agents:
-      queue: "kubernetes"
+      queue: "$$QUEUE"
     image: "alpine/helm:latest"
     concurrency: 1
     concurrency_group: "nasa-image-test"
