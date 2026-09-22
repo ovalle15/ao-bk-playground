@@ -6,6 +6,7 @@ env:
   NASA_API_SECRET: "nasa-api-token"
   # Set this if the Buildkite Packages registry requires authenticated pulls.
   REGISTRY_PULL_SECRET: ""
+  APP_VERSION: "1.0"
 
 steps:
   - label: ":helm: Validate chart"
