@@ -22,7 +22,7 @@ steps:
         --set-string "secrets.apiToken=validation-placeholder" \
         > /dev/null
 
-  - label: ":helm: + :rocket: Deploy published images through helm"
+  - label: ":rocket: Deploy published images through :helm:"
     key: "deploy-published-images"
     depends_on: "validate-chart"
     agents:
@@ -51,7 +51,6 @@ steps:
     depends_on: "deploy-published-images"
     build:
       message: "Triggering ao-tests pipeline"
-
 
   # - label: ":kubernetes: Test published images"
   #   key: "test-published-images"
