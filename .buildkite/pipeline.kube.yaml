@@ -49,8 +49,6 @@ steps:
   - trigger : "ao-tests"
     label: ":test_tube: Testing application..."
     depends_on: "deploy-published-images"
-    agents:
-      queue: "${QUEUE}"
     build:
       message: "Triggering ao-tests pipeline"
 
