@@ -51,3 +51,5 @@ steps:
     depends_on: "deploy-published-images"
     build:
       message: "Triggering ao-tests pipeline"
+      env: 
+        QUEUE: "${QUEUE}"
