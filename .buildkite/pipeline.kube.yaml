@@ -5,7 +5,7 @@ env:
   KUBE_NAMESPACE: "nasa-image"
   # Set this if the Buildkite Packages registry requires authenticated pulls.
   REGISTRY_PULL_SECRET_NAME: ""
-  APP_VERSION: "1.3"
+  APP_VERSION: "1.4"
   QUEUE: "kube"
 
 steps:
