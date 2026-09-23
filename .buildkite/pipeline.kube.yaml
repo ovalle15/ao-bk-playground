@@ -5,7 +5,7 @@ env:
   KUBE_NAMESPACE: "nasa-image"
   # Set this if the Buildkite Packages registry requires authenticated pulls.
   REGISTRY_PULL_SECRET_NAME: ""
-  APP_VERSION: "1.0"
+  APP_VERSION: "1.2"
   QUEUE: "kube"
 
 steps:
@@ -22,7 +22,7 @@ steps:
         --set-string "secrets.apiToken=validation-placeholder" \
         > /dev/null
 
-  - label: ":kube: Deploy published images"
+  - label: ":rocket: Deploy published images"
     key: "deploy-published-images"
     depends_on: "validate-chart"
     agents:
