@@ -51,14 +51,3 @@ steps:
     depends_on: "deploy-published-images"
     build:
       message: "Triggering ao-tests pipeline"
-
-  # - label: ":kubernetes: Test published images"
-  #   key: "test-published-images"
-  #   depends_on: "deploy-published-images"
-  #   agents:
-  #     queue: "kubernetes"
-  #   image: "python:3.13-alpine"
-  #   command: |
-  #     set -eu
-  #     python3 tests/wait_for_services.py
-  #     python3 -m unittest -v tests.test_application
