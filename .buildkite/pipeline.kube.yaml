@@ -52,4 +52,4 @@ steps:
     build:
       message: "Triggering ao-tests pipeline"
       env: 
-        andrea: "${QUEUE}"
+        QUEUE: "${QUEUE}"
