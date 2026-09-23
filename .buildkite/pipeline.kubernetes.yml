@@ -12,7 +12,7 @@ steps:
   - label: ":helm: Validate chart"
     key: "validate-chart"
     agents:
-      queue: "$$QUEUE"
+      queue: "${QUEUE}"
     image: "alpine/helm:latest"
     command: |
       set -eu
@@ -26,7 +26,7 @@ steps:
     key: "deploy-published-images"
     depends_on: "validate-chart"
     agents:
-      queue: "$$QUEUE"
+      queue: "${QUEUE}"
     image: "alpine/helm:latest"
     secrets:
       API_TOKEN: NASA_API_TOKEN
