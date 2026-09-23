@@ -360,33 +360,22 @@ Before running the test pipeline:
 2. Confirm that the `kubernetes` queue's service account can manage the
    chart's Deployments, Services, ConfigMaps, Secrets, and Helm release data in
    that namespace.
-3. Create a `nasa-api-token` Secret in the namespace with an `API_TOKEN` key.
-   For the first setup, use:
+3. In **Buildkite > Agents > your cluster > Secrets**, create a Buildkite
+   secret with key `NASA_API_TOKEN` and the NASA API key as its value. The
+   `deploy-published-images` step injects it into the job as `API_TOKEN` and
+   passes it to the chart as `secrets.apiToken`. Helm creates and manages the
+   resulting `nasa-image-api` Kubernetes Secret in the `nasa-image` namespace.
 
-   ```bash
-   kubectl create secret generic nasa-api-token \
-     --namespace nasa-image \
-     --from-literal=API_TOKEN="$(op read 'op://<vault>/<nasa-api-item>/<field>')"
-   ```
-
-   To replace it later, use:
-
-   ```bash
-   kubectl create secret generic nasa-api-token \
-     --namespace nasa-image \
-     --from-literal=API_TOKEN="$(op read 'op://<vault>/<nasa-api-item>/<field>')" \
-     --dry-run=client --output=yaml \
-     | kubectl replace -f -
-   ```
-
-   The 1Password Kubernetes Operator may alternatively manage this Secret;
-   Helm only needs its Kubernetes name and never receives the secret value.
+   Updating the Buildkite secret and rerunning the deploy step updates the
+   Helm-managed Kubernetes Secret. Because Helm manages this value, the secret
+   is also stored in Helm release history.
 4. If the package registry requires authenticated image pulls, create a
    `kubernetes.io/dockerconfigjson` pull Secret and set
-   `REGISTRY_PULL_SECRET` in `pipeline.kubernetes.yml` to its name.
+   `REGISTRY_PULL_SECRET_NAME` in `pipeline.kubernetes.yml` to its name.
 
-The namespace, release, secret, queue, and internal service URLs are declared
-in the test pipeline's top-level `env` block and can be changed together.
+The namespace, release, queue, registry Secret name, and internal service URLs
+are declared in the test pipeline's top-level `env` block and can be changed
+together.
 
 ## Run everything again
 

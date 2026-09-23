@@ -3,9 +3,8 @@ env:
   API_URL: "http://nasa-image-server.nasa-image.svc.cluster.local:3000"
   HELM_RELEASE: "nasa-image"
   KUBE_NAMESPACE: "nasa-image"
-  NASA_API_SECRET: "nasa-api-token"
   # Set this if the Buildkite Packages registry requires authenticated pulls.
-  REGISTRY_PULL_SECRET: ""
+  REGISTRY_PULL_SECRET_NAME: ""
   APP_VERSION: "1.0"
   QUEUE: "kube"
 
@@ -20,7 +19,7 @@ steps:
       helm lint ./helm --strict
       helm template "$$HELM_RELEASE" ./helm \
         --namespace "$$KUBE_NAMESPACE" \
-        --set-string "secrets.existingSecret=$$NASA_API_SECRET" \
+        --set-string "secrets.apiToken=validation-placeholder" \
         > /dev/null
 
   - label: ":kube: Deploy published images"
@@ -29,13 +28,15 @@ steps:
     agents:
       queue: "$$QUEUE"
     image: "alpine/helm:latest"
+    secrets:
+      API_TOKEN: NASA_API_TOKEN
     concurrency: 1
     concurrency_group: "nasa-image-test"
     command: |
       set -eu
       set --
-      if [ -n "$$REGISTRY_PULL_SECRET" ]; then
-        set -- --set-string "imagePullSecrets[0].name=$$REGISTRY_PULL_SECRET"
+      if [ -n "$$REGISTRY_PULL_SECRET_NAME" ]; then
+        set -- --set-string "imagePullSecrets[0].name=$$REGISTRY_PULL_SECRET_NAME"
       fi
 
       helm upgrade --install "$$HELM_RELEASE" ./helm \
@@ -43,7 +44,7 @@ steps:
         --rollback-on-failure \
         --wait \
         --timeout 5m \
-        --set-string "secrets.existingSecret=$$NASA_API_SECRET" \
+        --set-string "secrets.apiToken=$$API_TOKEN" \
         "$$@"
 
   # - label: ":kubernetes: Test published images"
