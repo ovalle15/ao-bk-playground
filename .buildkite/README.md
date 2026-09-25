@@ -24,7 +24,13 @@ Configure the Kubernetes deployment pipeline with:
 steps:
   - label: ":pipeline: Upload Kubernetes pipeline"
     command: buildkite-agent pipeline upload .buildkite/pipeline.kube.yaml
+agents:
+  queue: "${QUEUE}"
 ```
+
+The triggering pipeline supplies `QUEUE`. For a manually created build, add a
+`QUEUE` build environment variable containing an existing queue key such as
+`kube`.
 
 ## Image publishing
 
