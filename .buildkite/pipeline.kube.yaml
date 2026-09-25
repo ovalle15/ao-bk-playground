@@ -6,14 +6,13 @@ env:
   # Set this if the Buildkite Packages registry requires authenticated pulls.
   REGISTRY_PULL_SECRET_NAME: ""
   APP_VERSION: "1.4"
-  QUEUE: "kube"
 
 steps:
   - label: ":helm: Validate chart"
     key: "validate-chart"
+    image: "alpine/helm:latest"
     agents:
       queue: "${QUEUE}"
-    image: "alpine/helm:latest"
     command: |
       set -eu
       helm lint ./helm --strict
@@ -24,9 +23,9 @@ steps:
 
   - label: ":rocket: Deploy published images through :helm:"
     key: "deploy-published-images"
-    depends_on: "validate-chart"
     agents:
       queue: "${QUEUE}"
+    depends_on: "validate-chart"
     image: "alpine/helm:latest"
     secrets:
       API_TOKEN: NASA_API_TOKEN
@@ -46,10 +45,3 @@ steps:
         --timeout 5m \
         --set-string "secrets.apiToken=$$API_TOKEN" \
         "$$@"
-  - trigger : "ao-tests"
-    label: ":test_tube: Testing application..."
-    depends_on: "deploy-published-images"
-    build:
-      message: "Triggering ao-tests pipeline"
-      env: 
-        QUEUE: "kube"
