@@ -5,15 +5,15 @@ steps:
       queue: "webhook-acquire"
     commands:
       - echo "Building Docker image"
-      - docker build --tag packages.buildkite.com/tam-sandbox/ao-bk-playground/app:latest ./app # this is the path to the Dockerfile for the app image in the repo
-      - docker build --tag packages.buildkite.com/tam-sandbox/ao-bk-playground/server:latest ./server # this is the path to the Dockerfile for the server image in the repo
+      - docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/app:latest ./app # this is the path to the Dockerfile for the app image in the repo
+      - docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/server:latest ./server # this is the path to the Dockerfile for the server image in the repo
 
       - echo "Logging into bk package registry using OIDC"
-      - buildkite-agent oidc request-token --audience "https://packages.buildkite.com/tam-sandbox/ao-bk-playground" --lifetime 300 | docker login packages.buildkite.com/tam-sandbox/ao-bk-playground --username buildkite --password-stdin
+      - buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/ao-bk-playground" --lifetime 300 | docker login packages.buildkite.com/spacecamp/ao-bk-playground --username buildkite --password-stdin
       
       - echo "Pushing Docker image to bk registry"
-      - docker push packages.buildkite.com/tam-sandbox/ao-bk-playground/app:latest
-      - docker push packages.buildkite.com/tam-sandbox/ao-bk-playground/server:latest 
+      - docker push packages.buildkite.com/spacecamp/ao-bk-playground/app:latest
+      - docker push packages.buildkite.com/spacecamp/ao-bk-playground/server:latest 
 
 
 
