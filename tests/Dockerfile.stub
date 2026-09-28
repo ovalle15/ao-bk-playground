@@ -1,0 +1,6 @@
+FROM python:3.11-slim
+
+WORKDIR /workspace
+COPY tests/compose_nasa_stub.py ./stub.py
+
+CMD ["python", "stub.py"]

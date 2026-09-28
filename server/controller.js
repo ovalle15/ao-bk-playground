@@ -3,7 +3,7 @@ const dotenv = require('dotenv')
 
 dotenv.config()
 
-const nasaApiUrl = 'https://api.nasa.gov/planetary/apod'
+const nasaApiUrl = process.env.NASA_API_URL || 'https://api.nasa.gov/planetary/apod'
 
 /** Image Collection Transactions */
 

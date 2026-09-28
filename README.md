@@ -123,7 +123,7 @@ Compose places both containers on the private `app-network`. Service-name DNS le
 
 ## Current limitations
 
-- The Node package's `npm test` command remains a placeholder; black-box tests live in `tests/`.
+- The Node package's `npm test` command remains a placeholder; pytest suites live in `tests/`.
 - Compose startup ordering checks that a dependency container has started, not that the API is ready.
 - The server image uses Node.js 12, which is end-of-life and should be upgraded before production use.
 
@@ -248,65 +248,51 @@ Helm reuses the existing release and applies changes from the chart and values.
 The chart currently deploys the `latest` application image tags with
 `imagePullPolicy: Always`, so publish the desired images before upgrading.
 
-## Test locally
+## Test the containerized app
 
-The black-box tests in `tests/` expect the frontend at
-`http://localhost:8080` and the API at `http://localhost:3000` by default.
-
-### Test with Docker Compose
-
-Start the application from the repository root:
+Run the browser end-to-end suite against the actual Nginx and Express images
+with Docker Compose:
 
 ```bash
-API_TOKEN="$(op read 'op://<vault>/<nasa-api-item>/<field>')" \
-  docker compose up --build --detach
+docker compose -p nasa-app-pytest -f docker-compose.test.yml up \
+  --build --attach e2e --abort-on-container-exit --exit-code-from e2e
+docker compose -p nasa-app-pytest -f docker-compose.test.yml down
 ```
 
-Wait for both services and run the tests:
+This starts four isolated containers: the frontend, API, a local NASA stub,
+and a Playwright/pytest runner. Chromium opens the real page and checks the
+initial image, a date search that switches to video, and recovery after a
+failed request. The browser loads stub media through the same path as real
+media. This needs no NASA API key and does not publish host ports. The `up`
+command returns the pytest exit code. The dedicated Compose project keeps
+these containers separate from the regular development stack.
+The test runner prints each scenario by name and shows its browser actions and
+checks as they happen.
+
+## Test locally without Docker
+
+With Node.js, npm, and Python 3 available, install the server dependencies and
+pytest, then run the suites from the repository root:
 
 ```bash
-python3 tests/wait_for_services.py
-python3 -m unittest -v tests.test_application
+npm install --prefix server --no-package-lock
+python3 -m pip install -r requirements-test.txt
+python3 -m pytest
 ```
 
-The live NASA request test is skipped by default. Enable it with:
+The local API suite launches the real Express server and points it at a temporary
+local NASA stub. It checks date validation, image and video response mapping,
+request parameters, and upstream errors. The frontend suite serves the static
+files over HTTP and checks the page controls and linked assets. No Docker
+containers or NASA API key are needed for these suites.
+The default pytest configuration lists every test by name and shows why the
+browser-only module is skipped outside Compose.
 
-```bash
-RUN_LIVE_NASA_TEST=1 python3 -m unittest -v tests.test_application
-```
+The server uses the public NASA endpoint by default. `NASA_API_URL` can override
+it for an alternate APOD-compatible endpoint, including the test stub.
 
-Open the UI at `http://localhost:8080`. When finished, stop the services:
-
-```bash
-docker compose down
-```
-
-### Test the local Kubernetes deployment
-
-Keep each port-forward command running in a separate terminal:
-
-```bash
-kubectl port-forward --namespace nasa-image \
-  service/nasa-image-app 8080:80
-```
-
-```bash
-kubectl port-forward --namespace nasa-image \
-  service/nasa-image-server 3000:3000
-```
-
-In a third terminal, wait for the services and run the test suite:
-
-```bash
-python3 tests/wait_for_services.py
-python3 -m unittest -v tests.test_application
-```
-
-To include the live NASA API assertion:
-
-```bash
-RUN_LIVE_NASA_TEST=1 python3 -m unittest -v tests.test_application
-```
-
-Open the UI at `http://localhost:8080`. Press `Ctrl+C` in each port-forward
-terminal when testing is complete.
+To check a running Compose or Kubernetes deployment separately, expose the
+frontend at `http://localhost:8080` and API at `http://localhost:3000`, then
+run `python3 tests/wait_for_services.py`. Set `APP_URL` and `API_URL` if the
+services use different addresses. This readiness check does not run the pytest
+suites against the deployed services.

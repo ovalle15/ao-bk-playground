@@ -50,6 +50,9 @@ Prerequisites:
 - Rancher Desktop Kubernetes is running.
 - `kubectl` and Helm are installed.
 - The `kube` queue exists in the intended Buildkite cluster.
+- The Agent Stack controller for `kube` is running and connected. Creating the
+  queue alone is not enough; jobs remain scheduled when no agent is available
+  for that queue.
 - You have an agent token created in that same Buildkite cluster. The token
   determines which cluster the Agent Stack joins.
 
