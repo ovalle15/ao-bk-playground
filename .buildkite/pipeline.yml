@@ -14,4 +14,3 @@ steps:
       - echo "Pushing Docker image to bk registry"
       - docker push packages.buildkite.com/spacecamp/ao-bk-playground/app:latest
       - docker push packages.buildkite.com/spacecamp/ao-bk-playground/server:latest 
-
