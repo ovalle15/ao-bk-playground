@@ -147,7 +147,14 @@ def main() -> int:
         return 2
 
     queue = env("BUILDKITE_TARGET_QUEUE", "webhook-acquire")
-    image = env("BUILDKITE_AGENT_IMAGE", "ao-buildkite-acquire-agent:local")
+    image = env("BUILDKITE_AGENT_IMAGE")
+    if not image:
+        print(
+            "BUILDKITE_AGENT_IMAGE is required; set it to the published image "
+            "(packages.buildkite.com/<org>/<registry>/<image>:<tag>)",
+            file=sys.stderr,
+        )
+        return 2
     pipeline_slug = env("BUILDKITE_PIPELINE_SLUG")
     webhook_secret = env("BUILDKITE_WEBHOOK_TOKEN")
     api_key = env("WEBHOOK_SITE_API_KEY")

@@ -72,6 +72,30 @@ release in the `buildkite` namespace.
 Run `scripts/setup-buildkite-rancher.sh --help` for namespace, release,
 concurrency, chart-version, and non-interactive options.
 
+## Webhook agent image
+
+Set `BUILDKITE_AGENT_IMAGE` to the full image reference published in your
+Buildkite Package Registry before starting the launcher. For example:
+
+```bash
+export BUILDKITE_AGENT_IMAGE='packages.buildkite.com/<org>/<registry>/<image>:<tag>'
+```
+
+For a private registry, log in on the Docker host using a Buildkite API token
+with `read_packages` scope or a read-only registry token, then confirm the pull:
+
+```bash
+printf '%s' "$BUILDKITE_REGISTRY_READ_TOKEN" | \
+  docker login packages.buildkite.com/<org>/<registry> --username buildkite --password-stdin
+docker pull "$BUILDKITE_AGENT_IMAGE"
+```
+
+The registry's image page provides the exact image reference. The registry read
+token is different from `BUILDKITE_AGENT_TOKEN`, which registers the agent with
+Buildkite. Public registries do not require login. `BUILDKITE_AGENT_IMAGE` is
+required so a missing local image name cannot silently turn into an attempted
+Docker Hub pull.
+
 ## Webhook agent checkout over SSH
 
 For an SSH repository URL, give the Docker agent access to a directory with
@@ -96,7 +120,7 @@ a file inside the SSH directory. This sets `GIT_SSH_COMMAND` inside the
 container with the selected identity, batch mode, and strict host verification.
 
 The directory is mounted read-only at `/root/.ssh`, matching the root user in
-`ao-buildkite-acquire-agent:local`. Use a dedicated directory with a repository
+the configured agent image. Use a dedicated directory with a repository
 deploy key to limit which credentials the job can access. Standard key names
 such as `id_ed25519` work automatically; other names need `--ssh-key` or an
 `IdentityFile` entry in the directory's `config`, using the path inside the container.
