@@ -4,8 +4,6 @@ env:
 steps: 
   - key: "cache"
     label: ":cache: Restore and Save Cache"
-    agents:
-      queue: "webhook-acquire"
     command: |
 
       set -euo pipefail 
