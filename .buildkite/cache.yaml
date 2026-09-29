@@ -1,0 +1,7 @@
+caches: 
+  - name: "requirements"
+    cache_key: 
+      - "requirements-v1"
+      - agent: "os"
+    target_paths: 
+      - "~/requirements-e2e.txt"
