@@ -101,6 +101,10 @@ For an SSH repository URL, the host user running the watcher needs an SSH key
 authorized for the repository and a verified `known_hosts` entry. The agent
 inherits that user's environment and SSH configuration.
 
+For this public GitHub repository, the watcher disables Git's macOS credential
+helper in the agent process so checkout does not request Keychain access. It
+does not change the host's Git configuration.
+
 The pipeline's Docker build and push commands still need Docker on the agent
 host. They run after the agent starts and are separate from agent startup. The
 pipeline uses a temporary `DOCKER_CONFIG` for each job and writes its short-lived
