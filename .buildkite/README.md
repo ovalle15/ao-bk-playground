@@ -4,7 +4,7 @@ This repository has two active Buildkite pipeline definitions:
 
 | File | Queue | Purpose |
 | --- | --- | --- |
-| `pipeline.yml` | `webhook-acquire` | Build and publish the frontend and server images. |
+| `pipeline.yaml` | `webhook-acquire` | Build and publish the frontend and server images. |
 | `pipeline.kube.yaml` | `kube` | Validate the Helm chart and deploy the images to Rancher Desktop Kubernetes. |
 
 
@@ -15,7 +15,7 @@ Configure the image-publishing pipeline with:
 ```yaml
 steps:
   - label: ":pipeline: Upload image pipeline"
-    command: buildkite-agent pipeline upload .buildkite/pipeline.yml
+    command: buildkite-agent pipeline upload .buildkite/pipeline.yaml
 ```
 
 Configure the Kubernetes deployment pipeline with:
@@ -34,10 +34,10 @@ The triggering pipeline supplies `QUEUE`. For a manually created build, add a
 
 ## Image publishing
 
-`pipeline.yml` builds and pushes these images to Buildkite Packages:
+`pipeline.yaml` builds and pushes these images to Buildkite Packages:
 
-- `packages.buildkite.com/tam-sandbox/ao-bk-playground/app:latest`
-- `packages.buildkite.com/tam-sandbox/ao-bk-playground/server:latest`
+- `packages.buildkite.com/spacecamp/ao-bk-playground/app:latest`
+- `packages.buildkite.com/spacecamp/ao-bk-playground/server:latest`
 
 The job requires Docker and a Buildkite agent that supports
 `buildkite-agent oidc request-token`. The Buildkite Packages registry must have

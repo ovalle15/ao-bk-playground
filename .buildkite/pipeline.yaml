@@ -1,17 +1,22 @@
 steps:
   - key: "docker"
-    label: ":docker: Build, Login & Push app/server"
+    label: ":docker: Build & Push app/server"
     agents:
       queue: "webhook-acquire"
-    commands:
-      - echo "Building Docker image"
-      - docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/app:latest ./app # this is the path to the Dockerfile for the app image in the repo
-      - docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/server:latest ./server # this is the path to the Dockerfile for the server image in the repo
+    command: |
+      set -euo pipefail
+      DOCKER_CONFIG="$(mktemp -d "$${TMPDIR:-/tmp}/buildkite-docker.XXXXXX")"
+      export DOCKER_CONFIG
+      trap 'rm -rf "$$DOCKER_CONFIG"' EXIT
 
-      - echo "Logging into bk package registry using OIDC"
-      - buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/ao-bk-playground" --lifetime 300 | docker login packages.buildkite.com/spacecamp/ao-bk-playground --username buildkite --password-stdin
+      echo "Building Docker images"
+      docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/app:latest ./app
+      docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/server:latest ./server
 
-      - echo "Pushing Docker image to bk registry"
-      - docker push packages.buildkite.com/spacecamp/ao-bk-playground/app:latest
-      - docker push packages.buildkite.com/spacecamp/ao-bk-playground/server:latest
-      
+      echo "Preparing temporary Buildkite Package Registry credentials"
+      buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/ao-bk-playground" --lifetime 300 |
+        python3 scripts/write-docker-auth.py packages.buildkite.com
+
+      echo "Pushing Docker images to Buildkite Package Registry"
+      docker push packages.buildkite.com/spacecamp/ao-bk-playground/app:latest
+      docker push packages.buildkite.com/spacecamp/ao-bk-playground/server:latest

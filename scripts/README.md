@@ -86,7 +86,7 @@ Set `WEBHOOK_SITE_TOKEN` to the Webhook.site inbox token and
 python3 scripts/webhook-acquire-agent.py
 ```
 
-The watcher defaults to queue `webhook-acquire`, matching `.buildkite/pipeline.yml`.
+The watcher defaults to queue `webhook-acquire`, matching `.buildkite/pipeline.yaml`.
 Set `BUILDKITE_TARGET_QUEUE` if your pipeline uses another queue. Set
 `BUILDKITE_PIPELINE_SLUG` to restrict events to one pipeline, and
 `BUILDKITE_WEBHOOK_TOKEN` to verify the Buildkite webhook signature.
@@ -102,7 +102,10 @@ authorized for the repository and a verified `known_hosts` entry. The agent
 inherits that user's environment and SSH configuration.
 
 The pipeline's Docker build and push commands still need Docker on the agent
-host. They run after the agent starts and are separate from agent startup.
+host. They run after the agent starts and are separate from agent startup. The
+pipeline uses a temporary `DOCKER_CONFIG` for each job and writes its short-lived
+OIDC registry credential there without calling `docker login`. This avoids the
+host's macOS Keychain. The temporary config is deleted when the job ends.
 
 To inspect commands for existing events without launching agents, run:
 
