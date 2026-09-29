@@ -5,9 +5,15 @@ steps:
       queue: "webhook-acquire"
     command: |
       set -euo pipefail
+      umask 077
+      if [ -z "$${DOCKER_HOST:-}" ]; then
+        DOCKER_HOST="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
+        export DOCKER_HOST
+      fi
       DOCKER_CONFIG="$(mktemp -d "$${TMPDIR:-/tmp}/buildkite-docker.XXXXXX")"
       export DOCKER_CONFIG
       trap 'rm -rf "$$DOCKER_CONFIG"' EXIT
+      printf '%s\n' '{"auths":{"packages.buildkite.com":{}}}' > "$$DOCKER_CONFIG/config.json"
 
       echo "Building Docker images"
       docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/app:latest ./app

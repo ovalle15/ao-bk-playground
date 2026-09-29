@@ -146,12 +146,6 @@ def main() -> int:
     agent_environment = os.environ.copy()
     for watcher_secret in ("WEBHOOK_SITE_TOKEN", "WEBHOOK_SITE_API_KEY", "BUILDKITE_WEBHOOK_TOKEN"):
         agent_environment.pop(watcher_secret, None)
-    # This repository is publicly readable. Avoid the host's macOS Git
-    # credential helper opening Keychain during Buildkite checkout.
-    git_config_index = int(agent_environment.get("GIT_CONFIG_COUNT", "0"))
-    agent_environment["GIT_CONFIG_COUNT"] = str(git_config_index + 1)
-    agent_environment[f"GIT_CONFIG_KEY_{git_config_index}"] = "credential.https://github.com.helper"
-    agent_environment[f"GIT_CONFIG_VALUE_{git_config_index}"] = ""
     seen: set[str] = set()
     processes: dict[str, subprocess.Popen] = {}
     first_poll = True

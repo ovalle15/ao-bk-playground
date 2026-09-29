@@ -23,7 +23,6 @@ def test_scheduled_job_starts_host_agent(monkeypatch, capsys):
     monkeypatch.setenv("WEBHOOK_SITE_TOKEN", "test-inbox")
     monkeypatch.setenv("BUILDKITE_AGENT_TOKEN", "test-agent-token")
     monkeypatch.setenv("BUILDKITE_TARGET_QUEUE", "webhook-acquire")
-    monkeypatch.delenv("GIT_CONFIG_COUNT", raising=False)
     monkeypatch.delenv("BUILDKITE_PIPELINE_SLUG", raising=False)
     monkeypatch.delenv("BUILDKITE_WEBHOOK_TOKEN", raising=False)
     monkeypatch.setattr(sys, "argv", [str(script), "--once", "--replay-existing"])
@@ -38,8 +37,6 @@ def test_scheduled_job_starts_host_agent(monkeypatch, capsys):
         commands.append(command)
         assert env["BUILDKITE_AGENT_TOKEN"] == "test-agent-token"
         assert "WEBHOOK_SITE_TOKEN" not in env
-        assert env["GIT_CONFIG_KEY_0"] == "credential.https://github.com.helper"
-        assert env["GIT_CONFIG_VALUE_0"] == ""
         return FakeProcess()
 
     monkeypatch.setattr(watcher.subprocess, "Popen", fake_popen)
