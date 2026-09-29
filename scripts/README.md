@@ -72,70 +72,40 @@ release in the `buildkite` namespace.
 Run `scripts/setup-buildkite-rancher.sh --help` for namespace, release,
 concurrency, chart-version, and non-interactive options.
 
-## Webhook agent image
+## Webhook-triggered agents
 
-Set `BUILDKITE_AGENT_IMAGE` to the full image reference published in your
-Buildkite Package Registry before starting the launcher. For example:
+The watcher starts the `buildkite-agent` binary directly on the host when a
+matching Buildkite `job.scheduled` event arrives. It does not use an agent
+container or `BUILDKITE_AGENT_IMAGE`. Install `buildkite-agent` on the watcher
+host and ensure it is on `PATH`.
 
-```bash
-export BUILDKITE_AGENT_IMAGE='packages.buildkite.com/<org>/<registry>/<image>:<tag>'
-```
-
-For a private registry, log in on the Docker host using a Buildkite API token
-with `read_packages` scope or a read-only registry token, then confirm the pull:
+Set `WEBHOOK_SITE_TOKEN` to the Webhook.site inbox token and
+`BUILDKITE_AGENT_TOKEN` to the cluster queue token, then start the watcher:
 
 ```bash
-printf '%s' "$BUILDKITE_REGISTRY_READ_TOKEN" | \
-  docker login packages.buildkite.com/<org>/<registry> --username buildkite --password-stdin
-docker pull "$BUILDKITE_AGENT_IMAGE"
+python3 scripts/webhook-acquire-agent.py
 ```
 
-The registry's image page provides the exact image reference. The registry read
-token is different from `BUILDKITE_AGENT_TOKEN`, which registers the agent with
-Buildkite. Public registries do not require login. `BUILDKITE_AGENT_IMAGE` is
-required so a missing local image name cannot silently turn into an attempted
-Docker Hub pull.
+The watcher defaults to queue `webhook-acquire`, matching `.buildkite/pipeline.yml`.
+Set `BUILDKITE_TARGET_QUEUE` if your pipeline uses another queue. Set
+`BUILDKITE_PIPELINE_SLUG` to restrict events to one pipeline, and
+`BUILDKITE_WEBHOOK_TOKEN` to verify the Buildkite webhook signature.
 
-## Webhook agent checkout over SSH
+For PRs, GitHub must trigger a Buildkite build, and that build must schedule a
+job on the target queue. The watcher responds to that scheduled job; it does
+not consume GitHub pull request events directly. Keep the watcher running
+before opening a PR or triggering a build. By default it ignores events that
+were already in the inbox when it started.
 
-For an SSH repository URL, give the Docker agent access to a directory with
-an authorized private key and a verified `known_hosts` file:
+For an SSH repository URL, the host user running the watcher needs an SSH key
+authorized for the repository and a verified `known_hosts` entry. The agent
+inherits that user's environment and SSH configuration.
+
+The pipeline's Docker build and push commands still need Docker on the agent
+host. They run after the agent starts and are separate from agent startup.
+
+To inspect commands for existing events without launching agents, run:
 
 ```bash
-python3 scripts/webhook-acquire-agent.py --ssh-dir "$HOME/.ssh"
+python3 scripts/webhook-acquire-agent.py --once --replay-existing --dry-run
 ```
-
-Alternatively, export `BUILDKITE_SSH_DIR` before starting the watcher. Without
-either setting, the launcher does not mount SSH files.
-
-For a key with a nonstandard filename, select it explicitly:
-
-```bash
-python3 scripts/webhook-acquire-agent.py \
-  --ssh-dir "$HOME/.ssh" --ssh-key buildkite_spacecamp
-```
-
-Alternatively, export `BUILDKITE_SSH_KEY=buildkite_spacecamp`. The key must be
-a file inside the SSH directory. This sets `GIT_SSH_COMMAND` inside the
-container with the selected identity, batch mode, and strict host verification.
-
-The directory is mounted read-only at `/root/.ssh`, matching the root user in
-the configured agent image. Use a dedicated directory with a repository
-deploy key to limit which credentials the job can access. Standard key names
-such as `id_ed25519` work automatically; other names need `--ssh-key` or an
-`IdentityFile` entry in the directory's `config`, using the path inside the container.
-Any SSH configuration must work with Linux OpenSSH, including its file paths.
-
-The launcher sets `BUILDKITE_NO_SSH_KEYSCAN=true` so checkout uses the supplied
-host keys without trying to update the read-only directory. Ensure the Git
-server's verified host key is already in `known_hosts`. Private key files
-should have mode `600` and the directory mode `700`.
-
-This option mounts files, not the host's SSH agent. Passphrase-protected keys
-need a separate SSH agent setup for unattended checkout. Images running as a
-different user need an appropriate mount target instead of `/root/.ssh`.
-
-Start the watcher before triggering a fresh build. To inspect generated Docker
-commands for existing events without launching agents, add
-`--once --replay-existing --dry-run`; event filters and webhook verification
-still apply.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch one-shot Docker Buildkite agents from Webhook.site job events."""
+"""Launch one-shot Buildkite agents from Webhook.site job events."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import json
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -85,32 +86,20 @@ def matches_target(payload: dict, queue: str, pipeline_slug: str | None) -> bool
     return bool(job.get("id"))
 
 
-def agent_command(job_id: str, queue: str, image: str) -> list[str]:
+def agent_command(job_id: str, queue: str, agent_binary: str) -> list[str]:
     suffix = job_id.replace("-", "")[:12]
-    agent_name = f"{socket.gethostname()}-docker-acquire-{suffix}"
+    agent_name = f"{socket.gethostname()}-acquire-{suffix}"
     return [
-        "docker",
-        "run",
-        "--rm",
-        "--name",
-        f"buildkite-acquire-{suffix}",
-        "--volume",
-        "/var/run/docker.sock:/var/run/docker.sock",
-        "--volume",
-        "buildkite-acquire-builds:/buildkite/builds",
-        "--env",
-        "BUILDKITE_AGENT_TOKEN",
-        "--env",
-        f"BUILDKITE_AGENT_NAME={agent_name}",
-        "--env",
-        "BUILDKITE_WRITE_JOB_LOGS_TO_STDOUT=true",
-        image,
+        agent_binary,
         "start",
+        "--name",
+        agent_name,
         "--acquire-job",
         job_id,
         "--queue",
         queue,
         "--reflect-exit-status",
+        "--write-job-logs-to-stdout",
     ]
 
 
@@ -139,13 +128,9 @@ def main() -> int:
     args = parse_args()
     webhook_token = env("WEBHOOK_SITE_TOKEN")
     agent_token = env("BUILDKITE_AGENT_TOKEN")
-    image = env("BUILDKITE_AGENT_IMAGE")
-    if not image:
-        print(
-            "BUILDKITE_AGENT_IMAGE is required; set it to the published image "
-            "(packages.buildkite.com/<org>/<registry>/<image>:<tag>)",
-            file=sys.stderr,
-        )
+    agent_binary = shutil.which("buildkite-agent")
+    if not agent_binary:
+        print("buildkite-agent must be installed on the watcher host and available on PATH", file=sys.stderr)
         return 2
     if not webhook_token:
         print("WEBHOOK_SITE_TOKEN is required", file=sys.stderr)
@@ -158,12 +143,16 @@ def main() -> int:
     pipeline_slug = env("BUILDKITE_PIPELINE_SLUG")
     webhook_secret = env("BUILDKITE_WEBHOOK_TOKEN")
     api_key = env("WEBHOOK_SITE_API_KEY")
+    agent_environment = os.environ.copy()
+    for watcher_secret in ("WEBHOOK_SITE_TOKEN", "WEBHOOK_SITE_API_KEY", "BUILDKITE_WEBHOOK_TOKEN"):
+        agent_environment.pop(watcher_secret, None)
     seen: set[str] = set()
     processes: dict[str, subprocess.Popen] = {}
     first_poll = True
 
     if not webhook_secret:
         print("warning: BUILDKITE_WEBHOOK_TOKEN is unset; webhook authenticity will not be verified", flush=True)
+    print(f"Buildkite agent binary: {agent_binary}", flush=True)
     print(f"watching Webhook.site for queue={queue}", flush=True)
 
     while True:
@@ -199,12 +188,12 @@ def main() -> int:
                     continue
 
                 job_id = payload["job"]["id"]
-                command = agent_command(job_id, queue, image)
-                print(f"launching one-shot Docker agent for job {job_id}", flush=True)
+                command = agent_command(job_id, queue, agent_binary)
+                print(f"launching one-shot agent for job {job_id}", flush=True)
                 if args.dry_run:
                     print(" ".join(command), flush=True)
                 else:
-                    processes[job_id] = subprocess.Popen(command)
+                    processes[job_id] = subprocess.Popen(command, env=agent_environment)
 
         reap(processes)
         if args.once:
