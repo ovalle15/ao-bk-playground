@@ -16,12 +16,12 @@ steps:
       printf '%s\n' '{"auths":{"packages.buildkite.com":{}}}' > "$$DOCKER_CONFIG/config.json"
 
       echo "Building Docker images"
-      docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/app:latest ./app
-      docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/server:latest ./server
+      docker build --tag packages.buildkite.com/spacecamp/nasa-image/app:latest ./app
+      docker build --tag packages.buildkite.com/spacecamp/nasa-image/server:latest ./server
 
       echo "Logging into bk package registry using OIDC"
-      buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/ao-bk-playground" --lifetime 300 | docker login packages.buildkite.com/spacecamp/ao-bk-playground --username buildkite --password-stdin
+      buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/nasa-image" --lifetime 300 | docker login packages.buildkite.com/spacecamp/nasa-image --username buildkite --password-stdin
 
       echo "Pushing Docker images to Buildkite Package Registry"
-      docker push packages.buildkite.com/spacecamp/ao-bk-playground/app:latest
-      docker push packages.buildkite.com/spacecamp/ao-bk-playground/server:latest
+      docker push packages.buildkite.com/spacecamp/nasa-image/app:latest
+      docker push packages.buildkite.com/spacecamp/nasa-image/server:latest
