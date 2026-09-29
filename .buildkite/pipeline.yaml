@@ -19,9 +19,8 @@ steps:
       docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/app:latest ./app
       docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/server:latest ./server
 
-      echo "Preparing temporary Buildkite Package Registry credentials"
-      buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/ao-bk-playground" --lifetime 300 |
-        python3 scripts/write-docker-auth.py packages.buildkite.com
+      echo "Logging into bk package registry using OIDC"
+      buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/ao-bk-playground" --lifetime 300 | docker login packages.buildkite.com/spacecamp/ao-bk-playground --username buildkite --password-stdin
 
       echo "Pushing Docker images to Buildkite Package Registry"
       docker push packages.buildkite.com/spacecamp/ao-bk-playground/app:latest
