@@ -4,6 +4,8 @@ env:
 steps: 
   - key: "cache"
     label: ":cache: Restore and Save Cache"
+    agents: 
+      queue: cache
     command: |
 
       set -euo pipefail 
