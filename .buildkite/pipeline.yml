@@ -12,8 +12,6 @@ steps:
       - docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/app:latest ./app # this is the path to the Dockerfile for the app image in the repo
       - docker build --tag packages.buildkite.com/spacecamp/ao-bk-playground/server:latest ./server # this is the path to the Dockerfile for the server image in the repo
 
-      
-      
       - echo "Pushing Docker image to bk registry"
       - docker push packages.buildkite.com/spacecamp/ao-bk-playground/app:latest
       - docker push packages.buildkite.com/spacecamp/ao-bk-playground/server:latest
