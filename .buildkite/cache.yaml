@@ -4,4 +4,4 @@ caches:
       - "requirements-v1"
       - agent: "os"
     target_paths: 
-      - "~/requirements-e2e.txt"
+      - "/Users/andrea_ovalle/Development/bk_playground/ao-bk-playground/requirements-e2e.txt"

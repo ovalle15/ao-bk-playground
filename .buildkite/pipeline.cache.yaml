@@ -1,11 +1,12 @@
 env: 
   BUILDKITE_AGENT_CACHE_STORE_URL: "s3://s3-cache-andrea/buildkite?region=us-east-1"
+  QUEUE: "cache"
 
 steps: 
   - key: "cache"
     label: ":cache: Restore and Save Cache"
     agents: 
-      queue: cache
+      queue: "${QUEUE}"
     command: |
 
       set -euo pipefail 
