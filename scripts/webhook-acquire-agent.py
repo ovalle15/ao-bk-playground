@@ -139,6 +139,14 @@ def main() -> int:
     args = parse_args()
     webhook_token = env("WEBHOOK_SITE_TOKEN")
     agent_token = env("BUILDKITE_AGENT_TOKEN")
+    image = env("BUILDKITE_AGENT_IMAGE")
+    if not image:
+        print(
+            "BUILDKITE_AGENT_IMAGE is required; set it to the published image "
+            "(packages.buildkite.com/<org>/<registry>/<image>:<tag>)",
+            file=sys.stderr,
+        )
+        return 2
     if not webhook_token:
         print("WEBHOOK_SITE_TOKEN is required", file=sys.stderr)
         return 2
