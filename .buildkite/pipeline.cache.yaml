@@ -4,15 +4,16 @@ env:
 
 steps: 
   - key: "cache"
-    label: ":cache: Restore and Save Cache"
+    label: ":toolbox: Restore and Save Cache"
     agents: 
-      queue: "${QUEUE}"
+      queue: "$${QUEUE}"
     command: |
 
       set -euo pipefail 
-      echo "Running cache restore and save steps ... "
+      echo ":runner: Running cache restore and save steps ... "
 
       buildkite-agent cache restore --name requirements 
-      echo "Cache restore completed."
+      echo " :white_check_mark: Cache restore completed."
+
       buildkite-agent cache save --name requirements 
-      echo "Cache save completed."
+      echo " :white_check_mark: Cache save completed."
