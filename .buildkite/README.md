@@ -44,9 +44,11 @@ steps:
 
 The upload job and its generated E2E job both target the literal `cache` queue.
 The queue must have a connected agent with Docker, Python 3, and access to the
-S3 store configured in `pipeline.cache.yaml`. For a Mac webhook watcher, start
-it with `BUILDKITE_TARGET_QUEUE=cache` and an authenticated AWS profile that
-can read and write the bucket prefix.
+S3 store configured in `pipeline.cache.yaml`. The E2E step uses the AWS OIDC
+plugin to assume `ao-cache-demo` before the Python runner restores or saves the
+cache, so the agent also needs the AWS CLI. That IAM role must trust this
+Buildkite pipeline and have read and write access to the S3 cache prefix. For a
+Mac webhook watcher, start it with `BUILDKITE_TARGET_QUEUE=cache`.
 
 The Python runner in `scripts/run-cached-e2e.py` restores
 `.buildkite-cache/e2e-wheels`, downloads Linux Python wheels on a miss, saves
