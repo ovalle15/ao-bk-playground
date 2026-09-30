@@ -69,7 +69,7 @@ def main(docker_config_dir: str) -> int:
 
     # The cache definition names e2e_wheels and maps it to WHEEL_DIR. A first
     # build or changed requirements can miss; restore does not populate wheels.
-    print("Restoring the Linux Python wheel cache", flush=True)
+    print("+++ Restoring the Linux Python wheel cache", flush=True)
     run("buildkite-agent", "cache", "restore", "--name", "e2e_wheels", env=env)
 
     WHEEL_DIR.mkdir(parents=True, exist_ok=True)
@@ -78,7 +78,7 @@ def main(docker_config_dir: str) -> int:
     if cached_checksum != checksum:
         # Download inside Linux with Python 3.11, matching the test image.
         # Wheels with native code can be specific to the OS, CPU, and Python ABI.
-        print("Downloading Python wheels for the E2E test image", flush=True)
+        print("--- Downloading Python wheels for the E2E test image", flush=True)
         run(
             "docker",
             "run",
@@ -105,16 +105,16 @@ def main(docker_config_dir: str) -> int:
         marker.write_text(checksum + "\n")
     else:
         # The Dockerfile will use these wheels only if its own checksum matches.
-        print("Using restored Python wheels", flush=True)
+        print("--- Using restored Python wheels", flush=True)
 
     # Upload new wheels to the S3-backed Buildkite cache. An already existing
     # key is skipped by Buildkite unless a force save is requested.
-    print("Saving the wheel cache for later builds", flush=True)
+    print("+++ Saving the wheel cache for later builds", flush=True)
     run("buildkite-agent", "cache", "save", "--name", "e2e_wheels", env=env)
 
     # Start fresh because the NASA stub has one-time failure state. Compose
     # rebuilds the E2E image, whose Dockerfile installs from the mounted wheels.
-    print("Running the containerized browser E2E suite", flush=True)
+    print("+++ Running the containerized browser E2E suite", flush=True)
     run(*COMPOSE, "down", env=env)
     try:
         run(
