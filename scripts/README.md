@@ -132,4 +132,6 @@ uses the wheels only when their checksum marker matches the current
 requirements file. The runner gives Docker a temporary config containing no
 credentials so its public-image pulls do not request access to the Mac's Docker
 credential helper. That config is removed when the job exits and does not
-change the host's normal Docker login.
+change the host's normal Docker login. It also includes the directories of the
+installed Compose and Buildx CLI plugins; Docker needs those directories when
+`DOCKER_CONFIG` points away from the host's `.docker` directory.

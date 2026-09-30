@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -39,6 +41,21 @@ def docker_environment() -> dict[str, str]:
             text=True,
         ).strip()
     return env
+
+
+def isolated_docker_config() -> dict[str, object]:
+    """Keep Docker's CLI plugins available without loading host credentials."""
+    plugin_dirs = []
+    for plugin in ("docker-compose", "docker-buildx"):
+        plugin_binary = shutil.which(plugin)
+        if plugin_binary:
+            plugin_dir = str(Path(plugin_binary).parent)
+            if plugin_dir not in plugin_dirs:
+                plugin_dirs.append(plugin_dir)
+    return {
+        "auths": {"https://index.docker.io/v1/": {}},
+        "cliPluginsExtraDirs": plugin_dirs,
+    }
 
 
 def main(docker_config_dir: str) -> int:
@@ -122,9 +139,11 @@ def main(docker_config_dir: str) -> int:
 if __name__ == "__main__":
     # Isolate this job from the host's osxkeychain helper. The temporary config
     # contains no login credentials and is removed when the runner exits.
+    # Keep CLI plugin discovery: replacing DOCKER_CONFIG otherwise hides the
+    # Compose and Buildx plugins installed with Rancher Desktop or Docker.
     with tempfile.TemporaryDirectory(prefix="buildkite-e2e-docker-") as config_dir:
         (Path(config_dir) / "config.json").write_text(
-            '{"auths":{"https://index.docker.io/v1/":{}}}\n'
+            json.dumps(isolated_docker_config()) + "\n"
         )
         try:
             sys.exit(main(config_dir))
