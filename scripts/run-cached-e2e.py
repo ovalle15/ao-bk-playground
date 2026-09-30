@@ -69,7 +69,6 @@ def main(docker_config_dir: str) -> int:
 
     # The cache definition names e2e_wheels and maps it to WHEEL_DIR. A first
     # build or changed requirements can miss; restore does not populate wheels.
-    print("+++ :linux: Restoring the Linux Python wheel cache", flush=True)
     run("buildkite-agent", "cache", "restore", "--name", "e2e_wheels", env=env)
 
     WHEEL_DIR.mkdir(parents=True, exist_ok=True)
@@ -109,7 +108,6 @@ def main(docker_config_dir: str) -> int:
 
     # Upload new wheels to the S3-backed Buildkite cache. An already existing
     # key is skipped by Buildkite unless a force save is requested.
-    print("+++ :floppy_disk: Saving the wheel cache for later builds", flush=True)
     run("buildkite-agent", "cache", "save", "--name", "e2e_wheels", env=env)
 
     # Start fresh because the NASA stub has one-time failure state. Compose
