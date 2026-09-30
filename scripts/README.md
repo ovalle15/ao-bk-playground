@@ -129,4 +129,7 @@ runs the Docker Compose browser suite. It starts with a clean Compose test
 stack and removes that stack on completion, including after a failure. A cache
 miss is expected on the first build or after requirements change. The Dockerfile
 uses the wheels only when their checksum marker matches the current
-requirements file.
+requirements file. The runner gives Docker a temporary config containing no
+credentials so its public-image pulls do not request access to the Mac's Docker
+credential helper. That config is removed when the job exits and does not
+change the host's normal Docker login.

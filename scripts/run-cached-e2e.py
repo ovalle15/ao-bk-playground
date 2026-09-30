@@ -6,6 +6,7 @@ import hashlib
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -40,8 +41,11 @@ def docker_environment() -> dict[str, str]:
     return env
 
 
-def main() -> int:
+def main(docker_config_dir: str) -> int:
     env = docker_environment()
+    # Resolve the selected Docker context first, then use a config with no
+    # credential helper. This job only pulls public Docker Hub base images.
+    env["DOCKER_CONFIG"] = docker_config_dir
     # Buildkite's cache key hashes this same file. The local marker is a second
     # check that the restored wheel directory belongs to these requirements.
     checksum = hashlib.sha256(REQUIREMENTS.read_bytes()).hexdigest()
@@ -116,7 +120,13 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    try:
-        sys.exit(main())
-    except subprocess.CalledProcessError as error:
-        sys.exit(error.returncode)
+    # Isolate this job from the host's osxkeychain helper. The temporary config
+    # contains no login credentials and is removed when the runner exits.
+    with tempfile.TemporaryDirectory(prefix="buildkite-e2e-docker-") as config_dir:
+        (Path(config_dir) / "config.json").write_text(
+            '{"auths":{"https://index.docker.io/v1/":{}}}\n'
+        )
+        try:
+            sys.exit(main(config_dir))
+        except subprocess.CalledProcessError as error:
+            sys.exit(error.returncode)
