@@ -269,6 +269,18 @@ these containers separate from the regular development stack.
 The test runner prints each scenario by name and shows its browser actions and
 checks as they happen.
 
+### Cache E2E test dependencies in Buildkite
+
+The `cache` queue pipeline in
+[`.buildkite/pipeline.cache.yaml`](.buildkite/pipeline.cache.yaml) runs the same
+containerized browser suite. It uses Buildkite Cache to reuse Linux Python
+wheels for `requirements-e2e.txt` across builds; the requirements checksum
+invalidates the cache when dependencies change. Its Python runner restores the
+wheels before building the E2E image and saves them for later builds. The
+ordinary Docker Compose command above still works without a saved cache.
+See [the Buildkite setup instructions](.buildkite/README.md) for the upload
+step, agent and S3 requirements, and first and second build checks.
+
 ## Test locally without Docker
 
 With Node.js, npm, and Python 3 available, install the server dependencies and

@@ -1,7 +1,13 @@
-caches: 
-  - name: "requirements"
-    cache_key: 
-      - "requirements-v1"
-      - agent: "os"
-    target_paths: 
-      - "/Users/andrea_ovalle/Development/bk_playground/ao-bk-playground/requirements-e2e.txt"
+caches:
+  - name: "e2e_wheels"
+    # The literal version lets us intentionally discard older wheel archives.
+    cache_key:
+      - "linux-python311-wheels-v1"
+      # Wheels are platform-specific; keep architectures and pipelines separate.
+      - agent: "arch"
+      - agent: "pipeline"
+      # A requirements change gets a new entry before the image is built.
+      - checksum: "requirements-e2e.txt"
+    # Save downloaded wheels, not the checked-in requirements file.
+    target_paths:
+      - ".buildkite-cache/e2e-wheels"

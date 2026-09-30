@@ -1,18 +1,11 @@
-env: 
+env:
+  # the self-hosted agent uploads and downloads archives through this S3 prefix.
   BUILDKITE_AGENT_CACHE_STORE_URL: "s3://s3-cache-andrea/buildkite?region=us-east-1"
 
-steps: 
-  - key: "cache"
-    label: ":toolbox: Restore and Save Cache"
-    agents: 
+steps:
+  - key: "e2e-cache"
+    label: ":test_tube: E2E tests with cached Python wheels"
+    agents:
       queue: "cache"
-    command: |
-
-      set -euo pipefail 
-      echo ":runner: Running cache restore and save steps ... "
-
-      buildkite-agent cache restore --name requirements 
-      echo " :white_check_mark: Cache restore completed."
-
-      buildkite-agent cache save --name requirements 
-      echo " :white_check_mark: Cache save completed."
+    # The runner handles restore, wheel download, save, and the E2E suite.
+    command: "python3 scripts/run-cached-e2e.py"

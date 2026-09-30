@@ -114,3 +114,19 @@ To inspect commands for existing events without launching agents, run:
 ```bash
 python3 scripts/webhook-acquire-agent.py --once --replay-existing --dry-run
 ```
+
+## Cached E2E pipeline runner
+
+`run-cached-e2e.py` is the command in `.buildkite/pipeline.cache.yaml`. It needs
+to run inside a Buildkite job on the `cache` queue because its restore and save
+commands use the current job's cache registry credentials. It also needs Docker
+and the `buildkite-agent` CLI on the host. The runner uses Python's standard
+library; Python packages for the tests are installed in the E2E image.
+
+The runner restores a wheel directory keyed by `requirements-e2e.txt`, uses a
+Linux Python container to download missing wheels, saves the directory, then
+runs the Docker Compose browser suite. It starts with a clean Compose test
+stack and removes that stack on completion, including after a failure. A cache
+miss is expected on the first build or after requirements change. The Dockerfile
+uses the wheels only when their checksum marker matches the current
+requirements file.

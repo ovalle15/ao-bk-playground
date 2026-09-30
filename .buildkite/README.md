@@ -1,12 +1,12 @@
 # Buildkite pipelines
 
-This repository has two active Buildkite pipeline definitions:
+This repository has three Buildkite pipeline definitions:
 
 | File | Queue | Purpose |
 | --- | --- | --- |
 | `pipeline.yaml` | `webhook-acquire` | Build and publish the frontend and server images. |
 | `pipeline.kube.yaml` | `kube` | Validate the Helm chart and deploy the images to Rancher Desktop Kubernetes. |
-
+| `pipeline.cache.yaml` | `cache` | Run the containerized E2E suite with Python wheels saved through Buildkite Cache. |
 
 ## Buildkite pipeline configuration
 
@@ -31,6 +31,41 @@ agents:
 The triggering pipeline supplies `QUEUE`. For a manually created build, add a
 `QUEUE` build environment variable containing an existing queue key such as
 `kube`.
+
+Configure the cache pipeline with an upload step on the `cache` queue:
+
+```yaml
+steps:
+  - label: ":pipeline: Upload E2E cache pipeline"
+    command: buildkite-agent pipeline upload .buildkite/pipeline.cache.yaml
+    agents:
+      queue: "cache"
+```
+
+The upload job and its generated E2E job both target the literal `cache` queue.
+The queue must have a connected agent with Docker, Python 3, and access to the
+S3 store configured in `pipeline.cache.yaml`. For a Mac webhook watcher, start
+it with `BUILDKITE_TARGET_QUEUE=cache` and an authenticated AWS profile that
+can read and write the bucket prefix.
+
+The Python runner in `scripts/run-cached-e2e.py` restores
+`.buildkite-cache/e2e-wheels`, downloads Linux Python wheels on a miss, saves
+them through Buildkite Cache, and runs the Docker Compose E2E suite. It
+downloads inside a Linux container so the wheels match the E2E image. The
+cache key includes the agent architecture, pipeline, and checksum of
+`requirements-e2e.txt`; changing that file creates a new entry. The wheel
+directory is ignored by Git. Its checked-in `.gitkeep` lets a manual Docker
+Compose build fall back to the package index when no wheels are present.
+
+Run two builds with the same requirements. The first should log `Cache miss`,
+download wheels, and save an entry. The second should log an exact cache hit
+and `Using restored Python wheels`. In the image build log, `Looking in links:
+/wheels` confirms pip installed from the cache without contacting the package
+index. The E2E job should finish with three passing browser tests. Check
+**Agents → cluster → Cache Registries → Default → Entries** for the entry.
+The runner uses Buildkite job credentials, so run it as a pipeline job rather
+than directly from a terminal. Set an S3 lifecycle rule on the `buildkite/`
+prefix to expire old objects after three days and clean incomplete uploads.
 
 ## Image publishing
 
