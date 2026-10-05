@@ -1,9 +1,9 @@
-env: 
-  TAG: "latest-blah"
+
 steps:
   - label: ":docker: configure image tag"
     key: tag:create
     commands:
+    - TAG=$(git describe --tags --exact-match 2> /dev/null || true)
     - buildkite-agent meta-data set "TAG" "\${TAG}"
     - buildkite-agent step update "label" ":sunglasses:${TAG}"
 
