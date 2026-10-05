@@ -1,11 +1,11 @@
 env: 
-  TAG: "echo latest-blah"
+  TAG: "latest-blah"
 steps:
   - label: ":docker: configure image tag"
     key: tag:create
     commands:
     - buildkite-agent meta-data set "TAG" "\${TAG}"
-    - buildkite-agent step update "label" "\:sunglasses:\TAG=${TAG}"
+    - buildkite-agent step update "label" ":sunglasses:TAG=${TAG}"
     agents:
       queue: "webhook-acquire"
 
