@@ -1,28 +1,38 @@
 steps:
-  - key: "docker"
-    label: ":docker: Build & Push app/server"
+
+  - label: ":docker: configure image tag"
+    key: tag:create
+    commands:
+    - TAG=$(echo latest-blah)
+    - buildkite-agent meta-data set "TAG" "\${TAG}"
+    - buildkite-agent step update "label" ":sunglasses: TAG=\${TAG}"
     agents:
       queue: "webhook-acquire"
-    command: |
-      set -euo pipefail
-      umask 077
-      if [ -z "$${DOCKER_HOST:-}" ]; then
-        DOCKER_HOST="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
-        export DOCKER_HOST
-      fi
-      DOCKER_CONFIG="$(mktemp -d "$${TMPDIR:-/tmp}/buildkite-docker.XXXXXX")"
-      export DOCKER_CONFIG
-      trap 'rm -rf "$$DOCKER_CONFIG"' EXIT
-      printf '%s\n' '{"auths":{"packages.buildkite.com":{}}}' > "$$DOCKER_CONFIG/config.json"
 
-      echo "Building Docker images"
-      docker build --tag packages.buildkite.com/spacecamp/nasa-image/app:latest ./app
-      docker build --tag packages.buildkite.com/spacecamp/nasa-image/server:latest ./server
+  # - key: "docker"
+  #   label: ":docker: Build & Push app/server"
+  #   agents:
+  #     queue: "webhook-acquire"
+  #   command: |
+  #     set -euo pipefail
+  #     umask 077
+  #     if [ -z "$${DOCKER_HOST:-}" ]; then
+  #       DOCKER_HOST="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
+  #       export DOCKER_HOST
+  #     fi
+  #     DOCKER_CONFIG="$(mktemp -d "$${TMPDIR:-/tmp}/buildkite-docker.XXXXXX")"
+  #     export DOCKER_CONFIG
+  #     trap 'rm -rf "$$DOCKER_CONFIG"' EXIT
+  #     printf '%s\n' '{"auths":{"packages.buildkite.com":{}}}' > "$$DOCKER_CONFIG/config.json"
 
-      echo "Logging into bk package registry using OIDC"
-      buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/nasa-image" --lifetime 300 | docker login packages.buildkite.com/spacecamp/nasa-image --username buildkite --password-stdin
+  #     echo "Building Docker images"
+  #     docker build --tag packages.buildkite.com/spacecamp/nasa-image/app:latest ./app
+  #     docker build --tag packages.buildkite.com/spacecamp/nasa-image/server:latest ./server
 
-      echo "Pushing Docker images to Buildkite Package Registry"
-      docker push packages.buildkite.com/spacecamp/nasa-image/app:latest
-      docker push packages.buildkite.com/spacecamp/nasa-image/server:latest
+  #     echo "Logging into bk package registry using OIDC"
+  #     buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/nasa-image" --lifetime 300 | docker login packages.buildkite.com/spacecamp/nasa-image --username buildkite --password-stdin
+
+  #     echo "Pushing Docker images to Buildkite Package Registry"
+  #     docker push packages.buildkite.com/spacecamp/nasa-image/app:latest
+  #     docker push packages.buildkite.com/spacecamp/nasa-image/server:latest
       
