@@ -32,7 +32,8 @@ steps:
 
   - label: ":bar_chart: Summarize test failures"
     plugins:
-      - bugcrowd/test-summary#v1.11.0:
+      - bugcrowd/test-summary#master:
+          run_without_docker: true
           inputs:
             - label: "Demo tests"
               artifact_path: "test_results/demo.xml"
@@ -40,5 +41,4 @@ steps:
           formatter:
             type: details
           context: test-summary
-          # Surface plugin execution errors instead of suppressing them.
           fail_on_error: true
