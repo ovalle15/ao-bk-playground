@@ -3,7 +3,7 @@ steps:
   - label: ":docker: configure image tag"
     key: tag:create
     commands:
-    - TAG=$(git describe --tags --exact-match 2> /dev/null || true)
+    - TAG=$(sw_vers -productVersion)
     - buildkite-agent meta-data set "TAG" "\${TAG}"
     - buildkite-agent step update "label" ":sunglasses:${TAG}"
 
