@@ -25,4 +25,3 @@ steps:
       echo "Pushing Docker images to Buildkite Package Registry"
       docker push packages.buildkite.com/spacecamp/nasa-image/app:latest
       docker push packages.buildkite.com/spacecamp/nasa-image/server:latest
-      
