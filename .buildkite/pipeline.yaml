@@ -6,8 +6,7 @@ steps:
     commands:
     - buildkite-agent meta-data set "TAG" "\${TAG}"
     - buildkite-agent step update "label" ":sunglasses:${TAG}"
-    agents:
-      queue: "webhook-acquire" 
+
 
 
   # - key: "docker"
