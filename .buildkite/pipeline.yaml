@@ -1,5 +1,5 @@
 env: 
-  TAG: "latest-blah"
+  TAG: "echo latest-blah"
 steps:
   - label: ":docker: configure image tag"
     key: tag:create
