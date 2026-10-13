@@ -6,6 +6,8 @@ steps:
     - CURRENT_DIR=$(pwd)
     - buildkite-agent meta-data set "CURRENT_DIR" "$$CURRENT_DIR"
     - buildkite-agent step update "label" ":sunglasses:$$CURRENT_DIR"
+  - label: ":stop: Stop the pipeline"
+    command: "buildkite-agent stop"
 
 
 
