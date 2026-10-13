@@ -9,8 +9,6 @@ steps:
   - label: ":stop: Stop the pipeline"
     command: "buildkite-agent stop"
 
-
-
   # - key: "docker"
   #   label: ":docker: Build & Push app/server"
   #   agents:
