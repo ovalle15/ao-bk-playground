@@ -4,7 +4,7 @@ fullnameOverride: ""
 app:
   replicaCount: 1
   image:
-    repository: packages.buildkite.com/tam-sandbox/ao-bk-playground/app
+    repository: packages.buildkite.com/spacecamp/nasa-image/app
     tag: latest
     pullPolicy: Always
   service:
@@ -15,7 +15,7 @@ app:
 server:
   replicaCount: 1
   image:
-    repository: packages.buildkite.com/tam-sandbox/ao-bk-playground/server
+    repository: packages.buildkite.com/spacecamp/nasa-image/server
     tag: latest
     pullPolicy: Always
   service:
