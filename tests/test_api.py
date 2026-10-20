@@ -93,4 +93,43 @@ def test_upstream_failure_returns_safe_gateway_error(api_server, nasa_stub):
 
     assert status == 502
     assert payload == {"success": False, "error": "Unable to fetch the NASA image"}
+    assert len(state["requests"]) == 3
+
+
+def test_transient_upstream_failure_is_retried(api_server, nasa_stub):
+    state, _url = nasa_stub
+    state["statuses"] = [503, 500]
+    state["body"] = {"title": "A galaxy", "date": "2024-01-01", "media_type": "image",
+                     "url": "https://images.example/standard.jpg"}
+
+    status, payload = api_get(api_server, "/api/nasaimage?date=2024-01-01")
+
+    assert status == 200
+    assert payload["item"]["title"] == "A galaxy"
+    assert len(state["requests"]) == 3
+
+
+def test_client_error_from_nasa_is_not_retried(api_server, nasa_stub):
+    state, _url = nasa_stub
+    state["status"] = 403
+
+    status, _payload = api_get(api_server, "/api/nasaimage?date=2024-01-01")
+
+    assert status == 502
     assert len(state["requests"]) == 1
+
+
+def test_last_good_image_is_served_when_nasa_is_down(api_server, nasa_stub):
+    state, _url = nasa_stub
+    state["body"] = {"title": "A galaxy", "date": "2024-01-01", "media_type": "image",
+                     "url": "https://images.example/standard.jpg"}
+    _status, fresh = api_get(api_server, "/api/nasaimage?date=2024-01-01")
+
+    state["status"] = 503
+    status, payload = api_get(api_server, "/api/nasaimage?date=2024-01-01")
+
+    assert status == 200
+    assert payload == {"success": True, "stale": True, "item": fresh["item"]}
+
+    status, _payload = api_get(api_server, "/api/nasaimage?date=2024-01-05")
+    assert status == 502

@@ -43,7 +43,8 @@ class Handler(BaseHTTPRequestHandler):
         requested_date = params.get("date", ["2024-01-01"])[0]
         if requested_date == "2024-01-03":
             self.send_json(503, {"error": "NASA temporarily unavailable"})
-        elif requested_date == "2024-01-04" and Handler.retry_requests == 0:
+        # Fail every attempt of the first API request (the server retries 3 times)
+        elif requested_date == "2024-01-04" and Handler.retry_requests < 3:
             Handler.retry_requests += 1
             self.send_json(503, {"error": "NASA temporarily unavailable"})
         elif requested_date == "2024-01-02":

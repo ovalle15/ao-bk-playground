@@ -29,13 +29,15 @@ def get(url):
 
 @pytest.fixture
 def nasa_stub():
-    state = {"status": 200, "body": {}, "requests": []}
+    # "statuses" queues one-off statuses that are used before falling back to "status"
+    state = {"status": 200, "statuses": [], "body": {}, "requests": []}
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             state["requests"].append(self.path)
             body = json.dumps(state["body"]).encode("utf-8")
-            self.send_response(state["status"])
+            status = state["statuses"].pop(0) if state["statuses"] else state["status"]
+            self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
