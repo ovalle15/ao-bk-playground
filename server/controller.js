@@ -127,7 +127,8 @@ function decodeEntities(text) {
       const point = code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
       return point <= 0x10ffff ? String.fromCodePoint(point) : entity;
     }
-    return NAMED_ENTITIES[code.toLowerCase()] ?? entity;
+    const named = NAMED_ENTITIES[code.toLowerCase()];
+    return named === undefined ? entity : named;
   });
 }
 
