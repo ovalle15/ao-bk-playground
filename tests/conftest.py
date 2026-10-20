@@ -65,7 +65,7 @@ def api_server(nasa_stub):
         port = sock.getsockname()[1]
 
     env = os.environ.copy()
-    env.update({"PORT": str(port), "API_TOKEN": "pytest-token", "NASA_API_URL": nasa_url + "/apod"})
+    env.update({"PORT": str(port), "API_TOKEN": "pytest-token", "NASA_API_URL": nasa_url + "/apod-basic"})
     process = subprocess.Popen(
         ["node", "index.js"],
         cwd=ROOT / "server",

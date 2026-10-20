@@ -10,7 +10,7 @@ services:
     environment:
       PORT: "3000"
       API_TOKEN: pytest-token
-      NASA_API_URL: http://nasa-stub:8000/apod
+      NASA_API_URL: http://nasa-stub:8000/apod-basic
     depends_on:
       - nasa-stub
 

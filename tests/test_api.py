@@ -41,47 +41,62 @@ def test_future_date_is_rejected(api_server, nasa_stub):
 def test_image_response_is_normalized_and_date_is_forwarded(api_server, nasa_stub):
     state, _url = nasa_stub
     state["body"] = {
-        "title": "A galaxy", "date": "2024-01-01", "explanation": "Spiral arms",
-        "copyright": "A. Astronomer", "media_type": "image",
-        "url": "https://images.example/standard.jpg", "hdurl": "https://images.example/large.jpg",
+        "title": "A galaxy &amp; friends", "date": "2024-01-01",
+        "explanation": "<strong>Explanation:</strong> Spiral <a href=\"https://x.example\">arms</a> , "
+                       "near M31 's core. <br /><br /><b> Tomorrow's picture: </b> a nebula",
+        "copyright": "<b> Image Credit &amp; Copyright: </b> <a href=\"https://x.example\">A. Astronomer</a> ( Obs. )",
+        "media_type": "image", "url": "https://science.example/apod-2024-january-01",
+        "hdurl": "https://images.example/large.jpg",
+        "basic_html": "<img src=\"https://images.example/large.jpg\">",
     }
 
     status, payload = api_get(api_server, "/api/nasaimage?date=2024-01-01")
 
     assert status == 200
     assert payload == {"success": True, "item": {
-        "title": "A galaxy", "date": "2024-01-01", "explanation": "Spiral arms",
-        "attribution": "A. Astronomer", "mediaType": "image",
-        "mediaUrl": "https://images.example/standard.jpg",
-        "imageUrl": "https://images.example/standard.jpg",
+        "title": "A galaxy & friends", "date": "2024-01-01",
+        "explanation": "Spiral arms, near M31's core.",
+        "attribution": "A. Astronomer (Obs.)", "mediaType": "image",
+        "mediaUrl": "https://images.example/large.jpg",
+        "imageUrl": "https://images.example/large.jpg",
         "hdImageUrl": "https://images.example/large.jpg",
     }}
     request = urlsplit(state["requests"][0])
-    assert request.path == "/apod"
-    assert parse_qs(request.query) == {
-        "api_key": ["pytest-token"], "thumbs": ["true"], "date": ["2024-01-01"]
-    }
+    assert request.path == "/apod-basic/240101"
+    assert request.query == ""
 
 
-def test_video_response_uses_thumbnail_and_defaults(api_server, nasa_stub):
+def test_latest_video_uses_embed_from_basic_html_and_defaults(api_server, nasa_stub):
     state, _url = nasa_stub
-    state["body"] = {
-        "title": "A launch", "date": "2024-01-02", "explanation": "A video",
-        "media_type": "video", "url": "https://video.example/watch",
-        "thumbnail_url": "https://images.example/thumb.jpg",
-    }
+    state["body"] = [{
+        "title": "A launch", "date": "2024-01-02", "explanation": "A video", "copyright": "",
+        "media_type": "video", "url": "https://science.example/apod-2024-january-02",
+        "hdurl": "https://images.example/thumb.jpg",
+        "basic_html": "<p><iframe width=\"960\" src=\"//www.youtube.com/embed/abc?rel=0&amp;x=1\"></iframe></p>",
+    }]
 
     status, payload = api_get(api_server, "/api/nasaimage")
 
     assert status == 200
     assert payload["item"]["attribution"] == "NASA"
     assert payload["item"]["mediaType"] == "video"
-    assert payload["item"]["mediaUrl"] == "https://video.example/watch"
+    assert payload["item"]["mediaUrl"] == "https://www.youtube.com/embed/abc?rel=0&x=1"
     assert payload["item"]["imageUrl"] == "https://images.example/thumb.jpg"
-    assert payload["item"]["hdImageUrl"] == "https://video.example/watch"
-    assert parse_qs(urlsplit(state["requests"][0]).query) == {
-        "api_key": ["pytest-token"], "thumbs": ["true"]
-    }
+    request = urlsplit(state["requests"][0])
+    assert request.path == "/apod-basic"
+    assert parse_qs(request.query) == {"per_page": ["1"]}
+
+
+def test_missing_apod_date_returns_not_found(api_server, nasa_stub):
+    state, _url = nasa_stub
+    state["status"] = 404
+    state["body"] = {"code": "apod_basic_not_found", "message": "APOD not found.", "data": {"status": 404}}
+
+    status, payload = api_get(api_server, "/api/nasaimage?date=1995-06-17")
+
+    assert status == 404
+    assert payload == {"success": False, "error": "No APOD was published for that date"}
+    assert len(state["requests"]) == 1
 
 
 def test_upstream_failure_returns_safe_gateway_error(api_server, nasa_stub):

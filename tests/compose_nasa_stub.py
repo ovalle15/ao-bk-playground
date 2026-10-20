@@ -22,6 +22,24 @@ def pixel_png():
             chunk(b"IEND", b""))
 
 
+def apod(requested_date):
+    """Return a post shaped like science.nasa.gov's APOD Basic JSON."""
+    if requested_date == "2024-01-02":
+        return {
+            "title": "A launch", "date": requested_date,
+            "explanation": "<strong>Explanation:</strong> A video", "copyright": "",
+            "media_type": "video", "hdurl": MEDIA_BASE_URL + "/media/thumb.png",
+            "basic_html": '<iframe width="960" height="540" src="{}/media/video.html"></iframe>'.format(MEDIA_BASE_URL),
+        }
+    return {
+        "title": "A galaxy", "date": requested_date,
+        "explanation": "<strong>Explanation:</strong> Spiral arms",
+        "copyright": "<b> Image Credit &amp; Copyright: </b> <a href=\"https://example.com\">A. Astronomer</a>",
+        "media_type": "image", "hdurl": MEDIA_BASE_URL + "/media/large.png",
+        "basic_html": "<img src=\"{}/media/large.png\">".format(MEDIA_BASE_URL),
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     retry_requests = 0
 
@@ -34,32 +52,24 @@ class Handler(BaseHTTPRequestHandler):
             self.send_body(200, "text/html", b"<title>Launch footage</title><h1>Launch footage</h1>")
             return
 
-        params = parse_qs(request.query)
-
-        if request.path != "/apod" or params.get("api_key") != ["pytest-token"] or params.get("thumbs") != ["true"]:
+        # The latest APOD is the newest-first list; a single day is /apod-basic/{YYMMDD}
+        if request.path == "/apod-basic" and parse_qs(request.query).get("per_page") == ["1"]:
+            self.send_json(200, [apod("2024-01-01")])
+            return
+        if not request.path.startswith("/apod-basic/"):
             self.send_json(400, {"error": "Unexpected NASA request"})
             return
 
-        requested_date = params.get("date", ["2024-01-01"])[0]
+        date_code = request.path.rsplit("/", 1)[1]
+        requested_date = "20{}-{}-{}".format(date_code[:2], date_code[2:4], date_code[4:])
         if requested_date == "2024-01-03":
             self.send_json(503, {"error": "NASA temporarily unavailable"})
         # Fail every attempt of the first API request (the server retries 3 times)
         elif requested_date == "2024-01-04" and Handler.retry_requests < 3:
             Handler.retry_requests += 1
             self.send_json(503, {"error": "NASA temporarily unavailable"})
-        elif requested_date == "2024-01-02":
-            self.send_json(200, {
-                "title": "A launch", "date": requested_date, "explanation": "A video",
-                "media_type": "video", "url": MEDIA_BASE_URL + "/media/video.html",
-                "thumbnail_url": MEDIA_BASE_URL + "/media/thumb.png",
-            })
         else:
-            self.send_json(200, {
-                "title": "A galaxy", "date": requested_date,
-                "explanation": "Spiral arms", "copyright": "A. Astronomer",
-                "media_type": "image", "url": MEDIA_BASE_URL + "/media/galaxy.png",
-                "hdurl": MEDIA_BASE_URL + "/media/large.png",
-            })
+            self.send_json(200, apod(requested_date))
 
     def send_json(self, status, payload):
         self.send_body(status, "application/json", json.dumps(payload).encode("utf-8"))

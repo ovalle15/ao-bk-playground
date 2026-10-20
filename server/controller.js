@@ -3,9 +3,11 @@ const dotenv = require('dotenv')
 
 dotenv.config()
 
-const nasaApiUrl = process.env.NASA_API_URL || 'https://api.nasa.gov/planetary/apod'
+// APOD Basic JSON feed from science.nasa.gov; it replaced the unreliable api.nasa.gov APOD API
+// https://api.nasa.gov/assets/files/apod/APOD-APIs-and-RSS-info.pdf
+const nasaApiUrl = process.env.NASA_API_URL || 'https://science.nasa.gov/wp-json/wp/v2/apod-basic'
 
-// NASA's APOD API intermittently returns 5xx, so retry those with backoff
+// Retry transient 5xx and network errors with backoff
 const MAX_ATTEMPTS = 3
 const RETRY_BASE_DELAY_MS = 200
 const REQUEST_TIMEOUT_MS = 5000
@@ -31,21 +33,17 @@ const getImage = async(req, response) => {
   const cacheKey = requestedDate || 'today';
 
   try {
-    const res = await fetchWithRetry({
-      api_key: process.env.API_TOKEN,
-      thumbs: true,
-      ...(requestedDate && { date: requestedDate })
-    });
-    const nasaImage = {
-      title: res.data.title,
-      date: res.data.date,
-      explanation: res.data.explanation,
-      attribution: res.data.copyright || 'NASA',
-      mediaType: res.data.media_type,
-      mediaUrl: res.data.url,
-      imageUrl: res.data.thumbnail_url || res.data.url,
-      hdImageUrl: res.data.hdurl || res.data.url
-    };
+    // A single day is /{YYMMDD}; the newest-first list stands in for "today"
+    const res = requestedDate
+      ? await fetchWithRetry(`${nasaApiUrl}/${toLegacyDateCode(requestedDate)}`)
+      : await fetchWithRetry(nasaApiUrl, { per_page: 1 });
+    const apod = Array.isArray(res.data) ? res.data[0] : res.data;
+
+    if (!apod) {
+      throw new Error('APOD feed returned no posts');
+    }
+
+    const nasaImage = toNasaImage(apod);
 
     rememberImage(cacheKey, nasaImage);
 
@@ -55,6 +53,13 @@ const getImage = async(req, response) => {
     });
   } catch (error) {
     console.error(`Unable to fetch the NASA image: ${error.message}`)
+
+    if (error.response && error.response.status === 404) {
+      return response.status(404).json({
+        success: false,
+        error: 'No APOD was published for that date'
+      });
+    }
 
     const cachedImage = lastGoodImages.get(cacheKey);
     if (cachedImage) {
@@ -73,10 +78,68 @@ const getImage = async(req, response) => {
   }
 }
 
-async function fetchWithRetry(params) {
+// The feed returns HTML in text fields and hides video embeds inside basic_html,
+// so normalize it to the shape the frontend expects
+function toNasaImage(apod) {
+  const embedUrl = findEmbedUrl(apod.basic_html);
+  const isVideo = apod.media_type !== 'image' && Boolean(embedUrl);
+  const imageUrl = apod.hdurl || null;
+
+  return {
+    title: htmlToText(apod.title),
+    date: apod.date,
+    // Drop the label and the site's trailing navigation, which the old API didn't include
+    explanation: htmlToText(apod.explanation)
+      .replace(/^Explanation:\s*/i, '')
+      .replace(/\s*(?:Tomorrow's picture:|Explore Your Universe:).*$/is, ''),
+    attribution: htmlToText(apod.copyright || apod.credit)
+      .replace(/^[^:]*\b(?:credit|copyright)\b[^:]*:\s*/i, '') || 'NASA',
+    mediaType: isVideo ? 'video' : 'image',
+    mediaUrl: isVideo ? embedUrl : imageUrl,
+    imageUrl,
+    hdImageUrl: imageUrl
+  };
+}
+
+function findEmbedUrl(html) {
+  const match = /<iframe[^>]*\ssrc="([^"]+)"/i.exec(html || '');
+  if (!match) {
+    return null;
+  }
+  const src = decodeEntities(match[1]);
+  return src.startsWith('//') ? `https:${src}` : src;
+}
+
+function htmlToText(html) {
+  // Line and paragraph breaks become spaces; inline tags are dropped so words stay intact
+  return decodeEntities(String(html || '').replace(/<(?:br|\/?p)\b[^>]*>/gi, ' ').replace(/<[^>]*>/g, ''))
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.;:!?)]|'s\b)/g, '$1')
+    .replace(/\(\s+/g, '(')
+    .trim();
+}
+
+const NAMED_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+
+function decodeEntities(text) {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, code) => {
+    if (code[0] === '#') {
+      const point = code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      return point <= 0x10ffff ? String.fromCodePoint(point) : entity;
+    }
+    return NAMED_ENTITIES[code.toLowerCase()] ?? entity;
+  });
+}
+
+// 2024-01-05 -> 240105, the feed's legacy APOD date code
+function toLegacyDateCode(date) {
+  return date.slice(2).replace(/-/g, '');
+}
+
+async function fetchWithRetry(url, params) {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await axios.get(nasaApiUrl, { params, timeout: REQUEST_TIMEOUT_MS });
+      return await axios.get(url, { params, timeout: REQUEST_TIMEOUT_MS });
     } catch (error) {
       if (attempt >= MAX_ATTEMPTS || !isRetryable(error)) {
         throw error;
