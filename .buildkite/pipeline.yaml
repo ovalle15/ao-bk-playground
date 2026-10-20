@@ -16,15 +16,20 @@ steps:
       trap 'rm -rf "$$DOCKER_CONFIG"' EXIT
       printf '%s\n' '{"auths":{"packages.buildkite.com":{}}}' > "$$DOCKER_CONFIG/config.json"
 
-      echo "Building Docker images"
-      docker build --tag packages.buildkite.com/spacecamp/nasa-image/app:latest ./app
-      docker build --tag packages.buildkite.com/spacecamp/nasa-image/server:latest ./server
+      echo "Setting up multi-arch builder"
+      docker buildx create --name multiarch --driver docker-container --use 2>/dev/null || docker buildx use multiarch
+      # Register QEMU emulators when the builder can't already target both platforms
+      if ! docker buildx inspect --bootstrap | grep -q "linux/arm64" || ! docker buildx inspect | grep -q "linux/amd64"; then
+        docker run --privileged --rm tonistiigi/binfmt --install arm64,amd64
+      fi
 
+      # buildx --push builds and pushes in one step, so log in first
       echo "Logging into bk package registry using OIDC"
       buildkite-agent oidc request-token --audience "https://packages.buildkite.com/spacecamp/nasa-image" --lifetime 300 | docker login packages.buildkite.com/spacecamp/nasa-image --username buildkite --password-stdin
 
-      echo "Pushing Docker images to Buildkite Package Registry"
-      docker push packages.buildkite.com/spacecamp/nasa-image/app:latest
-      docker push packages.buildkite.com/spacecamp/nasa-image/server:latest
+      # Build amd64 and arm64 so the images run on both cloud hosts and Apple-silicon clusters
+      echo "Building and pushing multi-arch Docker images to Buildkite Package Registry"
+      docker buildx build --platform linux/amd64,linux/arm64 --tag packages.buildkite.com/spacecamp/nasa-image/app:latest --push ./app
+      docker buildx build --platform linux/amd64,linux/arm64 --tag packages.buildkite.com/spacecamp/nasa-image/server:latest --push ./server
       
       
