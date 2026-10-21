@@ -16,12 +16,6 @@ steps:
       trap 'rm -rf "$$DOCKER_CONFIG"' EXIT
       printf '%s\n' '{"auths":{"packages.buildkite.com":{}}}' > "$$DOCKER_CONFIG/config.json"
 
-      echo "Setting up multi-arch builder"
-      docker buildx create --name multiarch --driver docker-container --use 2>/dev/null || docker buildx use multiarch
-      # Register QEMU emulators when the builder can't already target both platforms
-      if ! docker buildx inspect --bootstrap | grep -q "linux/arm64" || ! docker buildx inspect | grep -q "linux/amd64"; then
-        docker run --privileged --rm tonistiigi/binfmt --install arm64,amd64
-      fi
 
       # buildx --push builds and pushes in one step, so log in first
       echo "Logging into bk package registry using OIDC"
