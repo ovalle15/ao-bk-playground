@@ -3,7 +3,7 @@ steps:
   - key: "docker"
     label: ":docker: Build & Push app/server"
     agents:
-      queue: "linux-sm"
+      queue: "kube"
     command: |
       set -euo pipefail
       umask 077
