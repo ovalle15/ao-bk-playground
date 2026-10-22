@@ -3,7 +3,7 @@ steps:
   - key: "docker"
     label: ":docker: Build & Push app/server"
     agents:
-      queue: "kube"
+      queue: "default"
     command: |
       set -euo pipefail
 
