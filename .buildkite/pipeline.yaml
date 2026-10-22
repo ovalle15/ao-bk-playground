@@ -13,4 +13,5 @@ steps:
       # Build amd64 and arm64 so the images run on both cloud hosts and Apple-silicon clusters
       echo "Building and pushing multi-arch Docker images to Buildkite Package Registry"
       docker buildx build --platform linux/amd64,linux/arm64 --tag packages.buildkite.com/spacecamp/nasa-image/app:latest --push ./app
-      docker buildx build --platform linux/amd64,linux/arm64 --tag packages.buildkite.com/spacecamp/nasa-image/server:latest --push ./server
+      docker buildx build --platform linux/amd64,linux/arm64 --tag packages.buildkite.com/spacecamp/nasa-image/server:latest --push ./server 
+      
