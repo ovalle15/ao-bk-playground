@@ -6,7 +6,7 @@ steps:
   - label: ":test_tube: E2E tests with cached Python wheels"
     key: "e2e-cache"
     agents:
-      queue: "cache"
+      queue: "default"
     env:
       AWS_DEFAULT_REGION: us-east-1
       AWS_REGION: us-east-1
